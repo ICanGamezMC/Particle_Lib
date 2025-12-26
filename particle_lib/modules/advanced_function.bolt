@@ -1,0 +1,209 @@
+import re
+import math
+
+class Relative_PConvert:
+      """
+    Wraps a particle generator and spawns particles
+    using relative ^ coordinates instead of absolute ones.
+    """
+    def __init__(self, generator):
+        self.generator = generator
+        self.spawn_enabled = True
+
+    def spawn_particles(self, particle="flame", relative=True):
+        if not self.spawn_enabled:
+            return
+
+        for x, y, z in self.generator.generate().values():
+            if relative:
+                # Use ^ notation for coordinates
+                particle particle ^x ^y ^z 0 0 0 0 1
+            else:
+                # fallback to absolute coordinates
+                particle particle x y z 0 0 0 0 1
+    def spawn_gradient_particles(self, gradients, scale=1.0, relative=False):
+        # require at least 2 colors
+        if len(gradients) < 2:
+            return
+
+        pts = self.generate().values()
+        total = len(pts)
+        if total == 0:
+            return
+
+        index = 0
+        for x, y, z in pts:
+            if total > 1:
+                t = index / (total - 1)
+            else:
+                t = 0.0
+
+            # determine which segment of the gradient
+            seg_len = 1.0 / (len(gradients) - 1)
+            seg = int(t / seg_len)
+            if seg >= len(gradients) - 1:
+                seg = len(gradients) - 2
+            local_t = (t - seg * seg_len) / seg_len
+
+            r1, g1, b1 = gradients[seg]
+            r2, g2, b2 = gradients[seg + 1]
+
+            # linear interpolate
+            r = r1 + (r2 - r1) * local_t
+            g = g1 + (g2 - g1) * local_t
+            b = b1 + (b2 - b1) * local_t
+
+            # clean numeric literals
+            r_raw = round(r * 1, 3)
+            g_raw = round(g * 1, 3)
+            b_raw = round(b * 1, 3)
+            scale_raw = round(scale * 1, 3)
+            x_raw = round(x * 1, 3)
+            y_raw = round(y * 1, 3)
+            z_raw = round(z * 1, 3)
+
+            # build particle command as string
+            if relative:
+                particle_cmd = f"dust{{color:[{r_raw},{g_raw},{b_raw}],scale:{scale_raw}}} ~{x_raw} ~{y_raw} ~{z_raw} 0 0 0 0 1"
+            else:
+                particle_cmd = f"dust{{color:[{r_raw},{g_raw},{b_raw}],scale:{scale_raw}}} {x_raw} {y_raw} {z_raw} 0 0 0 0 1"
+
+            # spawn the particle
+            particle particle_cmd
+
+            index += 1
+
+
+class Rotated_RelativePConvert:
+    """
+    Combines rotation and relative coordinate conversion for any generator
+    that implements .generate().
+    """
+    def __init__(self, generator):
+        self.generator = generator
+        self.spawn_enabled = True
+
+    def rotate_point(self, x, y, z, pivot_x, pivot_y, pivot_z, rx=0, ry=0, rz=0):
+        rx = math.radians(rx)
+        ry = math.radians(ry)
+        rz = math.radians(rz)
+
+        # Translate to pivot
+        x -= pivot_x
+        y -= pivot_y
+        z -= pivot_z
+
+        # Rotate around X
+        new_y = y * math.cos(rx) - z * math.sin(rx)
+        new_z = y * math.sin(rx) + z * math.cos(rx)
+        y = new_y
+        z = new_z
+
+        # Rotate around Y
+        new_x = x * math.cos(ry) + z * math.sin(ry)
+        new_z = -x * math.sin(ry) + z * math.cos(ry)
+        x = new_x
+        z = new_z
+
+        # Rotate around Z
+        new_x = x * math.cos(rz) - y * math.sin(rz)
+        new_y = x * math.sin(rz) + y * math.cos(rz)
+        x = new_x
+        y = new_y
+
+        # Translate back
+        x += pivot_x
+        y += pivot_y
+        z += pivot_z
+
+        return [x, y, z]
+
+    def spawn_particles(self, particle="flame", relative=True, rx=0, ry=0, rz=0):
+        if not self.spawn_enabled:
+            return
+
+        points_dict = self.generator.generate()
+        if not points_dict:
+            return
+
+        # Use the first point as pivot
+        pivot = points_dict[list(points_dict.keys())[0]]
+        pivot_x = pivot[0]
+        pivot_y = pivot[1]
+        pivot_z = pivot[2]
+
+        for key in points_dict:
+            point = points_dict[key]
+            x = point[0]
+            y = point[1]
+            z = point[2]
+
+            rotated = self.rotate_point(x, y, z, pivot_x, pivot_y, pivot_z, rx, ry, rz)
+            x = rotated[0]
+            y = rotated[1]
+            z = rotated[2]
+
+            if relative:
+                particle particle ^x ^y ^z 0 0 0 0 1
+            else:
+                particle particle x y z 0 0 0 0 1
+    def spawn_gradient_particles(self, gradients, scale=1.0, relative=False, rx=0, ry=0, rz=0):
+        # require at least 2 colors
+        if len(gradients) < 2:
+            return
+
+        points_dict = self.generator.generate()  # <-- use self.generator
+        pts = points_dict.values()
+        total = len(pts)
+        if total == 0:
+            return
+
+        index = 0
+        # use the first point as pivot for rotation
+        pivot = list(points_dict.values())[0]
+        pivot_x = pivot[0]
+        pivot_y = pivot[1]
+        pivot_z = pivot[2]
+
+        for x, y, z in pts:
+            # apply rotation around pivot
+            if rx != 0 or ry != 0 or rz != 0:
+                x, y, z = self.rotate_point(x, y, z, pivot_x, pivot_y, pivot_z, rx, ry, rz)
+
+            # gradient interpolation
+            if total > 1:
+                t = index / (total - 1)
+            else:
+                t = 0.0
+
+            seg_len = 1.0 / (len(gradients) - 1)
+            seg = int(t / seg_len)
+            if seg >= len(gradients) - 1:
+                seg = len(gradients) - 2
+            local_t = (t - seg * seg_len) / seg_len
+
+            r1, g1, b1 = gradients[seg]
+            r2, g2, b2 = gradients[seg + 1]
+
+            r = r1 + (r2 - r1) * local_t
+            g = g1 + (g2 - g1) * local_t
+            b = b1 + (b2 - b1) * local_t
+
+            # clean numeric literals
+            r_raw = round(r * 1, 3)
+            g_raw = round(g * 1, 3)
+            b_raw = round(b * 1, 3)
+            scale_raw = round(scale * 1, 3)
+            x_raw = round(x * 1, 3)
+            y_raw = round(y * 1, 3)
+            z_raw = round(z * 1, 3)
+
+            # build particle command as string
+            if relative:
+                particle_cmd = f"dust{{color:[{r_raw},{g_raw},{b_raw}],scale:{scale_raw}}} ^{x_raw} ^{y_raw} ^{z_raw} 0 0 0 0 1"
+            else:
+                particle_cmd = f"dust{{color:[{r_raw},{g_raw},{b_raw}],scale:{scale_raw}}} {x_raw} {y_raw} {z_raw} 0 0 0 0 1"
+
+            # spawn the particle
+            particle particle_cmd
+            index += 1
