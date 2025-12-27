@@ -19,4 +19,24 @@ This library currently is in major works to be packaged once all features are me
 from particle_lib:plib import ParticleLibrary
 particles = ParticleLibrary()
 ```
+This will soon be changed to work like the import math once everything is finalized. 
+
+---
+
+<details open>
+
+<summary>All Objects In Library:</summary>
+
+## Object Innitializer
+>This is what creates the object to later be used in rendering.
+
+| Object  | What it Does | How to use |
+| ------------- | ------------- | ------------- |
+| Line3D  | This creates a line in 3D space  | To create a line you need to input x1 y1 z1 for first coords and x2 y2 z2 for second coords. Then specify the amount of particles you want to use, see the example here. |
+| Circle3D  | This creates a 2D circle tied to a plane of axis  | To create a circle you need to input x1 y1 z1 for first coords and x2 y2 z2 for second coords. Input the amount of particles you use and then an axis its rotated on, allowed axes are "XZ","XY","YZ" only.  |
+| Square3D  | This creates a uniform square with uniform size, aligned only to xz grid as base.   | To use this you need just x1 y1 z1 for your first set of coords, the size of the square, and finally the amount of particles in that order.|
+| Circle3D  | This creates a circle in 3D space that could be filled   | To use you just need x1 y1 and z1 but also a set radius, the amount of particles, and whether it is filled or not.  |
+| Plane3D  | This creates a directional plane with set radius  | All you need for this is x1 y1 z1 and x2 y2 z2 for setting up the plane, it then rotates based on connecting the two points, cannot rotate because rotation is prebuilt in.  |
+| Polygon_MeshFromPoints  | This creates a 3d render of a polygon  | This one is the most buggy but how you use it is by setting up a dictionary of 3 variable tuples like [(x,y,z),(x,y,z)] and so on, then you specify the amount of particles.|
+</details>
 
