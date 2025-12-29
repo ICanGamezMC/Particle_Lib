@@ -3,7 +3,7 @@
 
 ---
 > [!CAUTION]
-> Everything in this library can and will change over time, features are currently in the works and names for things can and will change. 
+> This post is archived for keeping just the library files, Find a more updated particle library at [MC_Particle_Library](https://github.com/ICanGamezMC/MC_Particle_Library). This was archived for a better solution in creating a bolt / beet library.
 
 ## Introduction
 This is a library for standard and modded particles for minecraft using [beet](https://github.com/mcbeet/beet) and [bolt](https://github.com/mcbeet/bolt) to prebuild the commands during built time. This library is created for datapack developers who want fast alternatives to creating geometry in minecraft. Here are some things this library can do.
